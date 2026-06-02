@@ -259,6 +259,44 @@
             opacity: 0.3;
         }
 
+        /* ── Category tabs ── */
+        .cat-tab {
+            font-size: clamp(10px, 1.8vw, 12px);
+            padding: 4px 10px; border-radius: 6px;
+            transition: all 0.15s ease; white-space: nowrap;
+            cursor: pointer; font-weight: 500;
+        }
+        .cat-tab-active {
+            background: rgba(120, 80, 220, 0.5);
+            border: 1px solid rgba(140, 100, 240, 0.6);
+            color: #e0d0ff;
+        }
+        .cat-tab-inactive {
+            background: transparent;
+            border: 1px solid rgba(80, 60, 160, 0.3);
+            color: var(--text-muted);
+        }
+        .cat-tab-inactive:hover { color: var(--text-secondary); border-color: rgba(100,75,180,0.5); }
+
+        /* ── Lazy image skeleton ── */
+        .lazy-img { transition: opacity 0.3s; }
+        .lazy-img:not([src]), .lazy-img[src=""] {
+            background: linear-gradient(90deg, rgba(20,10,50,0.6) 25%, rgba(40,20,80,0.6) 50%, rgba(20,10,50,0.6) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+        }
+        @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+        /* ── Card group header ── */
+        .group-header {
+            grid-column: 1 / -1;
+            padding: 6px 2px 4px;
+            margin-top: 8px;
+            border-bottom: 1px solid rgba(100,75,180,0.2);
+            display: flex; align-items: center; gap: 6px;
+        }
+        .group-header:first-child { margin-top: 0; }
+
         /* ── Input ── */
         .field {
             width: 100%;
@@ -521,10 +559,18 @@
             </button>
         </div>
         <div class="p-2 md:p-3 flex-shrink-0" style="border-bottom:1px solid rgba(100,75,180,0.2)">
-            <div class="relative">
+            <div class="relative mb-2">
                 <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style="color:var(--text-muted)"></i>
                 <input type="text" id="searchInput" onkeyup="filterCards()" placeholder="ค้นหาชื่อไพ่..." autocomplete="off"
                     class="field pl-9 py-2.5">
+            </div>
+            <div class="flex gap-1 flex-wrap" id="categoryTabs">
+                <button class="cat-tab cat-tab-active" onclick="filterByGroup('all')">ทั้งหมด</button>
+                <button class="cat-tab cat-tab-inactive" onclick="filterByGroup('major')">✦ Major</button>
+                <button class="cat-tab cat-tab-inactive" onclick="filterByGroup('wands')">🔥 Wands</button>
+                <button class="cat-tab cat-tab-inactive" onclick="filterByGroup('cups')">💧 Cups</button>
+                <button class="cat-tab cat-tab-inactive" onclick="filterByGroup('swords')">⚔️ Swords</button>
+                <button class="cat-tab cat-tab-inactive" onclick="filterByGroup('pentacles')">⭐ Pentacles</button>
             </div>
         </div>
         <div class="overflow-y-auto flex-1 scroll p-2 md:p-3">
@@ -661,8 +707,7 @@ function setCardMode(mode) {
     refreshPlacedCards();
     // Re-render open modal if any
     if (!document.getElementById('cardModal').classList.contains('hidden')) {
-        const q = document.getElementById('searchInput').value.toLowerCase();
-        renderCardGrid(q ? tarotCards.filter(c => c.name.toLowerCase().includes(q)) : tarotCards);
+        applyFilters();
     }
 }
 
@@ -824,9 +869,9 @@ const generateTarotDeck = () => {
 
     majorNames.forEach((name, i) => {
         deck.push({
-            name,
+            name, group: 'major',
             horrorImg:  `./images/ar${i < 10 ? '0'+i : i}.png`,
-            classicImg: `${WIKI}${majorWiki[i]}`
+            classicImg: `${WIKI}${majorWiki[i]}?width=150`
         });
     });
     suits.forEach(suit => {
@@ -834,8 +879,9 @@ const generateTarotDeck = () => {
             const n = (i+1) < 10 ? '0'+(i+1) : (i+1).toString();
             deck.push({
                 name: `${rank} of ${suit.name}`,
+                group: suit.name.toLowerCase(),
                 horrorImg:  `./images/${suit.code}${minorCodes[i]}.png`,
-                classicImg: `${WIKI}${suit.wiki}${n}.jpg`
+                classicImg: `${WIKI}${suit.wiki}${n}.jpg?width=150`
             });
         });
     });
@@ -859,46 +905,123 @@ function getCardSrc(card) {
 function getFallbackSrc(card) {
     return cardMode === 'classic' ? '' : card.classicImg;
 }
-function cardImgHTML(card, cls = '') {
+function cardImgHTML(card, cls = '', lazy = false) {
     const src = getCardSrc(card);
     const fb  = getFallbackSrc(card);
+    if (lazy) {
+        return `<img data-src="${src}" data-fb="${fb}" class="w-full h-full object-cover lazy-img ${cls}" alt="${card.name}">`;
+    }
     const onerr = fb
         ? `if(this.dataset.tried){this.alt='';this.style.opacity='0.15'}else{this.dataset.tried='1';this.src='${fb}'}`
         : `this.style.opacity='0.15'`;
     return `<img src="${src}" onerror="${onerr}" class="w-full h-full object-cover ${cls}" alt="${card.name}" loading="lazy">`;
 }
 
+// ── IntersectionObserver lazy loader ─────────────────────────────────────────
+let imgObserver = null;
+function setupImageObserver() {
+    if (imgObserver) imgObserver.disconnect();
+    const scrollRoot = document.querySelector('#cardModal .overflow-y-auto');
+    imgObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (!entry.isIntersecting) return;
+            const img = entry.target;
+            const src = img.dataset.src;
+            const fb  = img.dataset.fb;
+            if (src) {
+                img.src = src;
+                img.onerror = function() {
+                    if (fb && !this.dataset.tried) { this.dataset.tried = '1'; this.src = fb; }
+                    else { this.style.opacity = '0.15'; }
+                };
+            }
+            imgObserver.unobserve(img);
+        });
+    }, { root: scrollRoot, rootMargin: '300px', threshold: 0 });
+}
+
 // ── Card Modal ────────────────────────────────────────────────────────────────
+let currentGroupFilter = 'all';
+
 function openCardSelector(position) {
     currentSelectingPosition = position;
+    currentGroupFilter = 'all';
+    updateCategoryTabs();
     document.getElementById('modalTitle').textContent = `ตำแหน่งที่ ${position}: ${positionalMeanings[position]}`;
     document.getElementById('searchInput').value = '';
-    renderCardGrid(tarotCards);
+    renderCardGrid(tarotCards, true);
     document.getElementById('cardModal').classList.remove('hidden');
     setTimeout(() => document.getElementById('searchInput').focus(), 50);
 }
 function closeCardSelector() {
     document.getElementById('cardModal').classList.add('hidden');
     currentSelectingPosition = null;
+    if (imgObserver) imgObserver.disconnect();
 }
-function filterCards() {
-    const q = document.getElementById('searchInput').value.toLowerCase();
-    renderCardGrid(q ? tarotCards.filter(c => c.name.toLowerCase().includes(q)) : tarotCards);
+function filterCards() { applyFilters(); }
+
+function filterByGroup(group) {
+    currentGroupFilter = group;
+    updateCategoryTabs();
+    document.getElementById('searchInput').value = '';
+    applyFilters();
 }
-function renderCardGrid(cards) {
+
+function updateCategoryTabs() {
+    const groups = ['all','major','wands','cups','swords','pentacles'];
+    document.querySelectorAll('#categoryTabs button').forEach((btn, i) => {
+        btn.className = 'cat-tab ' + (groups[i] === currentGroupFilter ? 'cat-tab-active' : 'cat-tab-inactive');
+    });
+}
+
+function applyFilters() {
+    const q = document.getElementById('searchInput').value.toLowerCase().trim();
+    let cards = currentGroupFilter === 'all' ? tarotCards : tarotCards.filter(c => c.group === currentGroupFilter);
+    if (q) cards = cards.filter(c => c.name.toLowerCase().includes(q));
+    renderCardGrid(cards, !q && currentGroupFilter === 'all');
+}
+
+const GROUP_META = [
+    { key:'major',    label:'✦ Major Arcana', color:'#c9a84c' },
+    { key:'wands',    label:'🔥 Wands',        color:'#fb923c' },
+    { key:'cups',     label:'💧 Cups',          color:'#38bdf8' },
+    { key:'swords',   label:'⚔️ Swords',        color:'#a78bfa' },
+    { key:'pentacles',label:'⭐ Pentacles',     color:'#4ade80' },
+];
+
+function renderCardGrid(cards, showHeaders = false) {
     const grid = document.getElementById('cardGrid');
     grid.innerHTML = '';
-    cards.forEach(card => {
+
+    const appendCard = (card) => {
         const btn = document.createElement('button');
         btn.className = 'card-item flex flex-col items-center';
         btn.innerHTML = `
             <div class="w-full rounded-lg overflow-hidden" style="aspect-ratio:2/3; background:rgba(10,5,30,0.8)">
-                ${cardImgHTML(card, 'rounded-lg')}
+                ${cardImgHTML(card, 'rounded-lg', true)}
             </div>
             <div class="card-item-name w-full mt-1">${card.name}</div>`;
         btn.onclick = () => showCardPreview(card);
         grid.appendChild(btn);
-    });
+    };
+
+    if (showHeaders) {
+        GROUP_META.forEach(g => {
+            const groupCards = cards.filter(c => c.group === g.key);
+            if (!groupCards.length) return;
+            const hdr = document.createElement('div');
+            hdr.className = 'group-header';
+            hdr.innerHTML = `<span style="font-family:'Cinzel',serif; font-weight:700; font-size:clamp(11px,2vw,13px); color:${g.color}">${g.label}</span>
+                <span style="font-size:11px; color:var(--text-muted)">(${groupCards.length})</span>`;
+            grid.appendChild(hdr);
+            groupCards.forEach(appendCard);
+        });
+    } else {
+        cards.forEach(appendCard);
+    }
+
+    setupImageObserver();
+    grid.querySelectorAll('.lazy-img').forEach(img => imgObserver.observe(img));
 }
 
 // ── Card Preview (zoom) ───────────────────────────────────────────────────────
