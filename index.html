@@ -870,7 +870,7 @@ const generateTarotDeck = () => {
     majorNames.forEach((name, i) => {
         deck.push({
             name, group: 'major',
-            horrorImg:  `./images/ar${i < 10 ? '0'+i : i}.png`,
+            horrorImg:  `./images/ar${i < 10 ? '0'+i : i}.webp`,
             classicImg: `${WIKI}${majorWiki[i]}?width=150`
         });
     });
@@ -880,7 +880,7 @@ const generateTarotDeck = () => {
             deck.push({
                 name: `${rank} of ${suit.name}`,
                 group: suit.name.toLowerCase(),
-                horrorImg:  `./images/${suit.code}${minorCodes[i]}.png`,
+                horrorImg:  `./images/${suit.code}${minorCodes[i]}.webp`,
                 classicImg: `${WIKI}${suit.wiki}${n}.jpg?width=150`
             });
         });
