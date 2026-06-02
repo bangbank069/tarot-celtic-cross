@@ -297,6 +297,22 @@
         }
         .group-header:first-child { margin-top: 0; }
 
+        /* ── Reversed card ── */
+        .card-reversed-img { transform: rotate(180deg); }
+        .reversed-badge {
+            display: inline-flex; align-items: center; gap: 4px;
+            font-size: 11px; font-weight: 700; padding: 2px 8px;
+            border-radius: 6px; letter-spacing: .03em;
+        }
+        .reversed-badge-on  { background: rgba(190,24,93,0.25); border:1px solid rgba(244,114,182,0.45); color:#f9a8d4; }
+        .reversed-badge-off { background: rgba(30,200,100,0.15); border:1px solid rgba(74,222,128,0.35); color:#86efac; }
+        .flip-btn {
+            font-size:11px; padding:3px 10px; border-radius:6px; cursor:pointer;
+            border:1px solid rgba(100,75,180,0.5); color:var(--text-secondary);
+            background: rgba(20,10,55,0.7); transition: all .15s;
+        }
+        .flip-btn:hover { color:#fff; border-color:rgba(140,100,240,0.7); }
+
         /* ── Input ── */
         .field {
             width: 100%;
@@ -348,6 +364,14 @@
                 <button id="modeHorrorBtn" onclick="setCardMode('horror')" class="mode-btn">🎭 Horror</button>
                 <button id="modeClassicBtn" onclick="setCardMode('classic')" class="mode-btn">🎴 Classic</button>
             </div>
+            <!-- Reversal Toggle -->
+            <button id="reversalToggleBtn" onclick="toggleReversalMode()" title="เปิด/ปิด ไพ่กลับหัว"
+                class="inline-flex items-center gap-1.5 text-xs py-1.5 px-3 rounded-lg transition-colors"
+                style="background:rgba(8,4,28,0.8); border:1px solid rgba(100,75,180,0.3); color:var(--text-muted)">
+                <span id="reversalDot" class="key-dot" style="background:#6b7280"></span>
+                <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+                <span>กลับหัว</span>
+            </button>
             <!-- API Key -->
             <button onclick="openApiKeyModal()" title="ตั้งค่า API Key"
                 class="inline-flex items-center gap-1.5 text-xs py-1.5 px-3 rounded-lg transition-colors"
@@ -589,7 +613,11 @@
         </div>
         <div class="text-center">
             <p class="font-bold text-white mb-1" style="font-family:'Cinzel',serif; font-size:clamp(1rem,4vw,1.4rem)" id="previewCardName"></p>
-            <p class="text-sm" style="color:var(--gold)" id="previewPositionName"></p>
+            <p class="text-sm mb-2" style="color:var(--gold)" id="previewPositionName"></p>
+            <div id="reversalIndicator" class="hidden items-center justify-center gap-2">
+                <span id="reversalBadge" class="reversed-badge"></span>
+                <button class="flip-btn" onclick="togglePendingReversal()">↕ สลับ</button>
+            </div>
         </div>
         <div class="gold-divider w-full"></div>
         <div class="flex gap-3 w-full">
@@ -699,6 +727,47 @@
 <script>
 // ── Card Mode ─────────────────────────────────────────────────────────────────
 let cardMode = localStorage.getItem('tarot_card_mode') || 'horror';
+
+// ── Reversal Mode ─────────────────────────────────────────────────────────────
+let reversalMode = localStorage.getItem('tarot_reversal') === 'true';
+const cardReversals = {1:false,2:false,3:false,4:false,5:false,6:false,7:false,8:false,9:false,10:false};
+let _pendingReversed = false;
+
+function toggleReversalMode() {
+    reversalMode = !reversalMode;
+    localStorage.setItem('tarot_reversal', reversalMode);
+    updateReversalUI();
+}
+function updateReversalUI() {
+    const dot = document.getElementById('reversalDot');
+    const btn = document.getElementById('reversalToggleBtn');
+    if (reversalMode) {
+        dot.style.background = '#f472b6';
+        btn.style.color = '#f9a8d4';
+        btn.style.borderColor = 'rgba(244,114,182,0.5)';
+    } else {
+        dot.style.background = '#6b7280';
+        btn.style.color = 'var(--text-muted)';
+        btn.style.borderColor = 'rgba(100,75,180,0.3)';
+    }
+}
+function togglePendingReversal() {
+    _pendingReversed = !_pendingReversed;
+    applyReversalPreview();
+}
+function applyReversalPreview() {
+    const img = document.getElementById('previewImg');
+    const badge = document.getElementById('reversalBadge');
+    if (_pendingReversed) {
+        img.style.transform = 'rotate(180deg)';
+        badge.textContent = '↕ กลับหัว (Reversed)';
+        badge.className = 'reversed-badge reversed-badge-on';
+    } else {
+        img.style.transform = '';
+        badge.textContent = '↑ ตั้ง (Upright)';
+        badge.className = 'reversed-badge reversed-badge-off';
+    }
+}
 
 function setCardMode(mode) {
     cardMode = mode;
@@ -1027,9 +1096,11 @@ function renderCardGrid(cards, showHeaders = false) {
 // ── Card Preview (zoom) ───────────────────────────────────────────────────────
 function showCardPreview(card) {
     _pendingCard = card;
+    _pendingReversed = reversalMode ? (Math.random() < 0.5) : false;
     const img = document.getElementById('previewImg');
     img.src = getCardSrc(card);
     img.alt = card.name;
+    img.style.transform = '';
     img.onerror = function() {
         const fb = getFallbackSrc(card);
         if (fb && !this.dataset.tried) { this.dataset.tried = '1'; this.src = fb; }
@@ -1037,6 +1108,13 @@ function showCardPreview(card) {
     document.getElementById('previewCardName').textContent = card.name;
     document.getElementById('previewPositionName').textContent =
         currentSelectingPosition ? `ตำแหน่งที่ ${currentSelectingPosition}: ${positionalMeanings[currentSelectingPosition]}` : '';
+    const ind = document.getElementById('reversalIndicator');
+    if (reversalMode) {
+        ind.classList.remove('hidden'); ind.classList.add('flex');
+        applyReversalPreview();
+    } else {
+        ind.classList.add('hidden'); ind.classList.remove('flex');
+    }
     document.getElementById('cardPreviewModal').classList.remove('hidden');
 }
 function closeCardPreview() {
@@ -1045,22 +1123,27 @@ function closeCardPreview() {
 }
 function confirmCardSelect() {
     if (!_pendingCard || currentSelectingPosition === null) return;
-    placeCard(currentSelectingPosition, _pendingCard);
+    cardReversals[currentSelectingPosition] = _pendingReversed;
+    placeCard(currentSelectingPosition, _pendingCard, _pendingReversed);
     document.getElementById('cardPreviewModal').classList.add('hidden');
     closeCardSelector();
     _pendingCard = null;
 }
-function placeCard(position, card) {
+function placeCard(position, card, reversed = false) {
     selectedCards[position] = card;
     const slot = document.getElementById(`slot-${position}`);
-    // reset classes
     slot.style.background = 'transparent';
     slot.style.border = '2px solid var(--gold)';
     slot.style.padding = '0';
     slot.className = slot.className.replace('flex flex-col items-center justify-center', '').replace('flex items-center justify-center', '') + ' overflow-hidden';
+    const revClass = reversed ? ' card-reversed-img' : '';
+    const revLabel = reversed
+        ? `<div class="absolute top-0 left-0 right-0 text-center py-0.5" style="font-size:9px;background:rgba(190,24,93,0.7);color:#fce7f3;font-weight:700">↕ กลับหัว</div>`
+        : '';
     slot.innerHTML = `
         <div class="relative w-full h-full">
-            ${cardImgHTML(card, position === 2 ? '' : 'rounded-[8px]')}
+            ${cardImgHTML(card, (position === 2 ? '' : 'rounded-[8px]') + revClass)}
+            ${revLabel}
             <div class="absolute bottom-0 left-0 right-0 truncate text-center font-medium px-1 py-1"
                 style="font-size:clamp(7px,1.5vw,10px); color:#d4b0ff;
                 background:linear-gradient(0deg, rgba(5,0,25,0.92) 60%, transparent 100%)">
@@ -1070,7 +1153,7 @@ function placeCard(position, card) {
 }
 function refreshPlacedCards() {
     for (let i = 1; i <= 10; i++) {
-        if (selectedCards[i]) placeCard(i, selectedCards[i]);
+        if (selectedCards[i]) placeCard(i, selectedCards[i], cardReversals[i]);
     }
 }
 
@@ -1146,9 +1229,14 @@ async function generateReading() {
     setTimeout(() => rc.scrollIntoView({behavior:'smooth', block:'start'}), 100);
 
     const sys = 'คุณคือผู้เชี่ยวชาญการอ่านไพ่ทาโรต์ระดับมาสเตอร์ ใช้ภาษาที่สละสลวย น่าเชื่อถือ ให้คำแนะนำเชิงบวกและปรับใช้ได้จริง อิงความหมายไพ่คลาสสิก (Rider-Waite) และข้อมูลลูกดวง';
+    const hasReversed = Object.values(cardReversals).some(v => v);
     let cards = '';
-    for (let i = 1; i <= 10; i++) cards += `ตำแหน่งที่ ${i} - ${positionalMeanings[i]}: ไพ่ **${selectedCards[i].name}**\n`;
-    const prompt = `${info}ลูกดวงเปิดไพ่ Celtic Cross (ทศดารา) 10 ตำแหน่ง:\n\n${cards}\n\nจงอ่านคำทำนายอย่างละเอียด:\n1. ภาพรวมสถานการณ์ (The Cross)\n2. เส้นทางเวลา (Timeline)\n3. ปัจจัยแวดล้อม (The Staff)\n4. บทสรุปและคำแนะนำ (Final Outcome)\n(จัดรูปแบบข้อความให้อ่านง่าย รองรับ Markdown)`;
+    for (let i = 1; i <= 10; i++) {
+        const rev = cardReversals[i] ? ' **(กลับหัว/Reversed)**' : ' (ตั้ง/Upright)';
+        cards += `ตำแหน่งที่ ${i} - ${positionalMeanings[i]}: ไพ่ **${selectedCards[i].name}**${hasReversed ? rev : ''}\n`;
+    }
+    const reversedNote = hasReversed ? '\n(ไพ่ที่กลับหัว = พลังงานถูกกั้น, ชะงักงัน, หรือแสดงออกทางภายใน — ให้ตีความตามบริบท)\n' : '';
+    const prompt = `${info}ลูกดวงเปิดไพ่ Celtic Cross (ทศดารา) 10 ตำแหน่ง:\n\n${cards}${reversedNote}\nจงอ่านคำทำนายอย่างละเอียด:\n1. ภาพรวมสถานการณ์ (The Cross)\n2. เส้นทางเวลา (Timeline)\n3. ปัจจัยแวดล้อม (The Staff)\n4. บทสรุปและคำแนะนำ (Final Outcome)\n(จัดรูปแบบข้อความให้อ่านง่าย รองรับ Markdown)`;
 
     try {
         const reading = await fetchGemini(prompt, sys);
@@ -1169,6 +1257,7 @@ window.addEventListener('load', () => {
     lucide.createIcons();
     updateApiKeyStatus();
     updateModeUI();
+    updateReversalUI();
     renderHistory();
     if (!getApiKey()) setTimeout(openApiKeyModal, 500);
 });

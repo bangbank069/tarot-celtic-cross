@@ -1,10 +1,5 @@
-# Large master/preview assets (not used by the app)
-1.MAJOR.png
-2.MAJOR.png
-3.PENTACLES.png
-4.CUP.png
-5.SWORDS.png
-6.WANDS.png
+# Large master PNG originals (web uses WebP instead)
+images/*.png
 
 # Secrets / local config
 *.env
