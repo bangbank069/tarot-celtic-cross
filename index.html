@@ -1,0 +1,1073 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <title>Celtic Cross Tarot Reader</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --bg-base:        #030015;
+            --bg-mid:         #0e0330;
+            --bg-glow:        #1a0842;
+            --panel-bg:       rgba(10, 5, 35, 0.82);
+            --panel-border:   rgba(140, 110, 220, 0.2);
+            --panel-gold:     rgba(180, 140, 60, 0.25);
+            --gold:           #c9a84c;
+            --gold-light:     #e8c870;
+            --purple-accent:  #9333ea;
+            --rose-accent:    #e879a6;
+            --text-primary:   #f0eaff;
+            --text-secondary: #a090c0;
+            --text-muted:     #6050a0;
+            --slot-empty:     rgba(20, 10, 55, 0.55);
+            --slot-border:    rgba(110, 80, 200, 0.35);
+            --slot-hover:     rgba(201, 168, 76, 0.7);
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: 'Prompt', sans-serif;
+            background-color: var(--bg-base);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* ── Mystical background ── */
+        body::before {
+            content: '';
+            position: fixed; inset: 0; z-index: 0; pointer-events: none;
+            background:
+                radial-gradient(ellipse at 50% 0%,   var(--bg-glow) 0%, var(--bg-mid) 35%, var(--bg-base) 70%),
+                radial-gradient(ellipse at 80% 100%, rgba(80,20,120,0.3) 0%, transparent 60%),
+                radial-gradient(ellipse at 10% 60%,  rgba(30,10,90,0.4) 0%, transparent 50%);
+        }
+        body::after {
+            content: '';
+            position: fixed; inset: 0; z-index: 0; pointer-events: none;
+            background-image:
+                radial-gradient(circle, rgba(255,215,100,0.5) 1px, transparent 1px),
+                radial-gradient(circle, rgba(200,155,255,0.4) 1px, transparent 1px);
+            background-size: 320px 320px, 450px 450px;
+            background-position: 40px 30px, 160px 200px;
+            opacity: 0.35;
+        }
+
+        .app-wrapper { position: relative; z-index: 1; }
+
+        /* ── Typography ── */
+        .title-cinzel {
+            font-family: 'Cinzel', serif;
+            font-size: clamp(1.6rem, 5vw, 3.2rem);
+            background: linear-gradient(135deg, var(--gold-light) 0%, var(--gold) 30%, #b06bea 65%, var(--rose-accent) 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            letter-spacing: 0.02em;
+            line-height: 1.2;
+        }
+        .section-title {
+            font-family: 'Cinzel', serif;
+            color: #c0a0f0;
+            letter-spacing: 0.05em;
+        }
+
+        /* ── Glass panel ── */
+        .glass-panel {
+            background: var(--panel-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--panel-border);
+            box-shadow: 0 8px 40px rgba(0,0,0,0.6), inset 0 1px 0 rgba(200,170,255,0.07);
+        }
+        .glass-panel-gold {
+            background: var(--panel-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--panel-gold);
+            box-shadow: 0 8px 40px rgba(0,0,0,0.6), inset 0 1px 0 rgba(200,168,76,0.08);
+        }
+
+        /* ── Card Slot ── */
+        .card-slot {
+            aspect-ratio: 2 / 3;
+            transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+            cursor: pointer;
+            background: var(--slot-empty);
+            border: 2px solid var(--slot-border);
+            border-radius: 10px;
+            position: relative;
+            overflow: hidden;
+        }
+        .card-slot:hover {
+            transform: translateY(-5px);
+            border-color: var(--slot-hover) !important;
+            box-shadow: 0 12px 35px -6px rgba(201,168,76,0.35), 0 0 0 1px rgba(201,168,76,0.15);
+            z-index: 30;
+        }
+        @media (hover: none) { .card-slot:hover { transform: none; box-shadow: none; } }
+
+        .card-slot-crossed {
+            aspect-ratio: 2 / 3;
+            cursor: pointer;
+            background: rgba(30, 8, 55, 0.75);
+            border: 2px solid rgba(220,80,120,0.5);
+            border-radius: 10px;
+            position: absolute;
+            overflow: hidden;
+        }
+
+        /* ── Celtic Cross grid ── */
+        .cross-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: clamp(8px, 2.5vw, 22px);
+            width: min(88vw, 430px);
+            flex-shrink: 0;
+        }
+        @media (min-width: 1024px) {
+            .cross-grid { width: clamp(400px, 38vw, 540px); gap: clamp(14px, 2.2vw, 24px); }
+        }
+
+        /* ── Staff column ── */
+        .staff-col {
+            display: flex; flex-direction: column;
+            gap: clamp(8px, 2vw, 18px);
+            width: clamp(85px, 19vw, 135px);
+            flex-shrink: 0;
+        }
+        @media (min-width: 1024px) {
+            .staff-col { width: clamp(130px, 13vw, 170px); gap: clamp(14px, 1.8vw, 20px); }
+        }
+        @media (max-width: 1023px) {
+            .staff-col {
+                flex-direction: row; flex-wrap: nowrap;
+                width: 100%; max-width: min(88vw, 430px);
+                justify-content: center;
+            }
+            .staff-col > div { flex: 1; min-width: 0; max-width: calc(25% - 6px); }
+        }
+
+        /* ── Position label ── */
+        .pos-label {
+            font-size: clamp(8px, 1.6vw, 11px);
+            color: #b090e0;
+            font-weight: 500;
+            text-align: center;
+            line-height: 1.2;
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .pos-label-rose { color: #f472b6; font-weight: 700; }
+        .pos-label-sm { font-size: clamp(7px, 1.4vw, 10px); }
+
+        /* ── Spinner ── */
+        .spinner {
+            border: 4px solid rgba(255,255,255,0.08);
+            border-left-color: var(--gold);
+            border-radius: 50%;
+            width: 42px; height: 42px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ── Markdown result ── */
+        .md h2 { font-family:'Cinzel',serif; font-size:clamp(1rem,2.8vw,1.4rem); font-weight:700; color:var(--gold-light); margin:1.6rem 0 0.6rem; letter-spacing:.03em; }
+        .md h3 { font-size:clamp(.95rem,2.3vw,1.2rem); font-weight:600; color:#e0a0d8; margin:1.3rem 0 0.5rem; }
+        .md h4 { font-size:clamp(.9rem,2vw,1.05rem); font-weight:600; color:#c0a0f0; margin:1rem 0 0.4rem; }
+        .md p  { margin-bottom:.9rem; line-height:1.8; font-size:clamp(.82rem,2vw,.98rem); color:var(--text-primary); }
+        .md ul { list-style-type:disc; padding-left:1.5rem; margin-bottom:1rem; }
+        .md li { margin-bottom:.3rem; font-size:clamp(.82rem,2vw,.98rem); }
+        .md strong { color:#fff; }
+        .md em { color:var(--gold-light); }
+
+        /* ── Scrollbar ── */
+        .scroll::-webkit-scrollbar { width: 5px; }
+        .scroll::-webkit-scrollbar-track { background: #0a0528; }
+        .scroll::-webkit-scrollbar-thumb { background: #3a2870; border-radius: 10px; }
+        .scroll::-webkit-scrollbar-thumb:hover { background: #5a3890; }
+
+        /* ── Card grid item ── */
+        .card-item {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            position: relative; z-index: 1;
+            background: rgba(15, 8, 45, 0.7);
+            border: 1px solid rgba(100, 75, 180, 0.3);
+            border-radius: 10px;
+            padding: 6px;
+            cursor: pointer;
+        }
+        .card-item:hover {
+            transform: scale(1.12);
+            box-shadow: 0 8px 28px -4px rgba(150,100,255,0.6);
+            border-color: var(--gold);
+            z-index: 20;
+        }
+        @media (hover: none) { .card-item:hover { transform: none; box-shadow: none; } }
+        .card-item-name {
+            font-size: clamp(8px, 1.7vw, 11px);
+            color: #d0c0f8;
+            text-align: center;
+            margin-top: 4px;
+            line-height: 1.3;
+            word-break: break-word;
+        }
+
+        /* ── Mode toggle ── */
+        .mode-btn {
+            font-size: clamp(11px, 2vw, 13px);
+            padding: 6px 14px; border-radius: 8px;
+            font-weight: 600; transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+        .mode-btn-active-horror {
+            background: linear-gradient(135deg, #7c3aed, #be185d);
+            color: white; box-shadow: 0 0 12px rgba(139,92,246,0.5);
+        }
+        .mode-btn-active-classic {
+            background: linear-gradient(135deg, #b45309, var(--gold));
+            color: #1a0a00; box-shadow: 0 0 12px rgba(201,168,76,0.5);
+        }
+        .mode-btn-inactive {
+            background: transparent; color: var(--text-muted);
+        }
+        .mode-btn-inactive:hover { color: var(--text-secondary); }
+
+        /* ── Key dot ── */
+        .key-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+
+        /* ── Preview large image ── */
+        #cardPreviewModal .preview-img {
+            max-height: 58vh;
+            width: auto;
+            max-width: 100%;
+            border-radius: 16px;
+            box-shadow: 0 10px 50px -6px rgba(150,100,255,0.7), 0 0 0 1px rgba(201,168,76,0.3);
+        }
+
+        /* ── Divider ── */
+        .gold-divider {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--gold), transparent);
+            opacity: 0.3;
+        }
+
+        /* ── Input ── */
+        .field {
+            width: 100%;
+            background: rgba(8, 4, 28, 0.7);
+            border: 1px solid rgba(100, 75, 180, 0.35);
+            border-radius: 8px;
+            padding: 8px 12px;
+            color: var(--text-primary);
+            font-size: 14px;
+            font-family: 'Prompt', sans-serif;
+            transition: border-color 0.2s;
+            outline: none;
+        }
+        .field:focus { border-color: rgba(150, 100, 255, 0.7); }
+        .field option { background: #0e0330; }
+    </style>
+</head>
+<body class="px-3 py-5 sm:px-5 sm:py-6 md:px-8 md:py-8">
+<div class="app-wrapper max-w-6xl mx-auto">
+
+    <!-- ── API Key Banner ── -->
+    <div id="apiKeyBanner" class="hidden mb-4 rounded-xl px-4 py-3 flex flex-wrap items-center justify-between gap-2"
+        style="background:rgba(120,70,0,0.3); border:1px solid rgba(180,130,40,0.5)">
+        <span class="text-amber-200 text-sm flex items-center gap-2 flex-wrap">
+            <i data-lucide="key" class="w-4 h-4 flex-shrink-0"></i>
+            กรุณาตั้งค่า <strong class="text-amber-100 mx-0.5">Gemini API Key</strong> ก่อนใช้งาน — รับฟรีได้ที่
+            <a href="https://aistudio.google.com/app/apikey" target="_blank" class="underline text-amber-300 hover:text-amber-100 ml-0.5">Google AI Studio</a>
+        </span>
+        <button onclick="openApiKeyModal()"
+            class="flex-shrink-0 font-bold text-xs py-1.5 px-3 rounded-lg transition-colors"
+            style="background:rgba(180,120,20,0.8); color:#fff">ตั้งค่าเดี๋ยวนี้</button>
+    </div>
+
+    <!-- ── Header ── -->
+    <header class="text-center mb-7 md:mb-9">
+        <div class="flex items-center justify-center gap-2 md:gap-3 mb-3 flex-wrap">
+            <i data-lucide="moon-star" class="w-7 h-7 md:w-10 md:h-10 flex-shrink-0" style="color:var(--gold)"></i>
+            <h1 class="title-cinzel">Celtic Cross Tarot</h1>
+            <i data-lucide="sparkles" class="w-7 h-7 md:w-10 md:h-10 flex-shrink-0" style="color:var(--rose-accent)"></i>
+        </div>
+        <p class="text-sm md:text-base max-w-xl mx-auto px-2 leading-relaxed" style="color:var(--text-secondary)">
+            จำลองการวางไพ่ทาโรต์ 10 ตำแหน่ง (ทศดารา) เพื่อเจาะลึกสถานการณ์ อดีต อนาคต และบทสรุป
+        </p>
+
+        <!-- Controls row -->
+        <div class="flex flex-wrap items-center justify-center gap-3 mt-4">
+            <!-- Card Mode Toggle -->
+            <div class="flex items-center gap-1 rounded-xl p-1" style="background:rgba(8,4,28,0.8); border:1px solid rgba(100,75,180,0.3)">
+                <button id="modeHorrorBtn" onclick="setCardMode('horror')" class="mode-btn">🎭 Horror</button>
+                <button id="modeClassicBtn" onclick="setCardMode('classic')" class="mode-btn">🎴 Classic</button>
+            </div>
+            <!-- API Key -->
+            <button onclick="openApiKeyModal()" title="ตั้งค่า API Key"
+                class="inline-flex items-center gap-1.5 text-xs py-1.5 px-3 rounded-lg transition-colors"
+                style="background:rgba(8,4,28,0.8); border:1px solid rgba(100,75,180,0.3); color:var(--text-secondary)">
+                <span id="apiKeyDot" class="key-dot" style="background:#ef4444"></span>
+                <i data-lucide="settings" class="w-3.5 h-3.5"></i>
+                <span>API Key</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- ── User Info Form ── -->
+    <div class="glass-panel-gold rounded-2xl p-4 md:p-6 mb-7 md:mb-9 max-w-4xl mx-auto shadow-xl">
+        <h2 class="section-title text-sm md:text-base font-bold mb-4 flex items-center gap-2">
+            <i data-lucide="user-circle" class="w-4 h-4 md:w-5 md:h-5 flex-shrink-0" style="color:var(--gold)"></i>
+            ข้อมูลเจ้าของดวง
+            <span class="font-normal text-xs" style="color:var(--text-muted)">(ไม่บังคับ)</span>
+        </h2>
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+            <div>
+                <label class="block text-xs mb-1" style="color:var(--text-muted)">ชื่อ</label>
+                <input type="text" id="userName" class="field" placeholder="ชื่อจริง">
+            </div>
+            <div>
+                <label class="block text-xs mb-1" style="color:var(--text-muted)">นามสกุล</label>
+                <input type="text" id="userSurname" class="field" placeholder="นามสกุล">
+            </div>
+            <div class="col-span-2 md:col-span-1">
+                <label class="block text-xs mb-1" style="color:var(--text-muted)">วัน/เดือน/ปีเกิด</label>
+                <input type="date" id="userDob" class="field" style="color-scheme:dark">
+            </div>
+            <div>
+                <label class="block text-xs mb-1" style="color:var(--text-muted)">เวลาเกิด</label>
+                <input type="time" id="userTime" class="field" style="color-scheme:dark">
+            </div>
+            <div>
+                <label class="block text-xs mb-1" style="color:var(--text-muted)">เพศ</label>
+                <select id="userGender" class="field">
+                    <option value="ไม่ระบุ">ไม่ระบุ</option>
+                    <option value="ชาย">ชาย</option>
+                    <option value="หญิง">หญิง</option>
+                    <option value="LGBTQ+">LGBTQ+</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Celtic Cross + Staff ── -->
+    <div class="flex flex-col lg:flex-row gap-8 lg:gap-14 justify-center items-center lg:items-start mb-10 md:mb-12">
+
+        <!-- THE CROSS -->
+        <div class="cross-grid">
+
+            <!-- Row 1: empty | pos3 | empty -->
+            <div></div>
+            <div class="flex flex-col">
+                <div class="pos-label">3. เป้าหมาย/ความคิด</div>
+                <div id="slot-3" class="card-slot flex flex-col items-center justify-center" onclick="openCardSelector(3)">
+                    <i data-lucide="plus-circle" class="w-5 h-5 md:w-7 md:h-7 mb-1 opacity-30" style="color:var(--gold)"></i>
+                    <span class="text-[9px] md:text-[11px]" style="color:var(--text-muted)">เลือกไพ่</span>
+                </div>
+            </div>
+            <div></div>
+
+            <!-- Row 2: pos5 | center(1+2) | pos6 -->
+            <div class="flex flex-col">
+                <div class="pos-label">5. อดีตที่ผ่านมา</div>
+                <div id="slot-5" class="card-slot flex flex-col items-center justify-center" onclick="openCardSelector(5)">
+                    <i data-lucide="plus-circle" class="w-5 h-5 md:w-7 md:h-7 mb-1 opacity-30" style="color:var(--gold)"></i>
+                    <span class="text-[9px] md:text-[11px]" style="color:var(--text-muted)">เลือกไพ่</span>
+                </div>
+            </div>
+
+            <!-- Center: pos1 & pos2 — labels clearly above, no overlap -->
+            <div class="flex flex-col">
+                <!-- Both labels in one row -->
+                <div class="flex justify-between items-end gap-1 mb-1">
+                    <span class="pos-label pos-label-sm" style="flex:1; text-align:left">1. สถานการณ์</span>
+                    <span class="pos-label pos-label-sm pos-label-rose" style="flex:1; text-align:right">2. อุปสรรค</span>
+                </div>
+                <!-- Stacked cards -->
+                <div class="relative" style="aspect-ratio:2/3">
+                    <!-- pos1: base layer -->
+                    <div id="slot-1"
+                        class="absolute inset-0 card-slot flex flex-col items-center justify-center"
+                        style="z-index:10; border-radius:10px"
+                        onclick="openCardSelector(1)">
+                        <i data-lucide="plus-circle" class="w-5 h-5 md:w-7 md:h-7 mb-1 opacity-30" style="color:var(--gold)"></i>
+                        <span class="text-[9px] md:text-[11px]" style="color:var(--text-muted)">เลือกไพ่</span>
+                    </div>
+                    <!-- pos2: rotated cross -->
+                    <div id="slot-2"
+                        class="card-slot-crossed flex items-center justify-center"
+                        style="z-index:20; width:115%; height:100%; top:0; left:-7.5%; transform:rotate(90deg)"
+                        onclick="openCardSelector(2)">
+                        <span class="text-[9px] md:text-[11px]" style="transform:rotate(-90deg); color:var(--text-muted)">เลือกไพ่</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex flex-col">
+                <div class="pos-label">6. อนาคตอันใกล้</div>
+                <div id="slot-6" class="card-slot flex flex-col items-center justify-center" onclick="openCardSelector(6)">
+                    <i data-lucide="plus-circle" class="w-5 h-5 md:w-7 md:h-7 mb-1 opacity-30" style="color:var(--gold)"></i>
+                    <span class="text-[9px] md:text-[11px]" style="color:var(--text-muted)">เลือกไพ่</span>
+                </div>
+            </div>
+
+            <!-- Row 3: empty | pos4 | empty -->
+            <div></div>
+            <div class="flex flex-col">
+                <div class="pos-label">4. รากฐานจิตใจ</div>
+                <div id="slot-4" class="card-slot flex flex-col items-center justify-center" onclick="openCardSelector(4)">
+                    <i data-lucide="plus-circle" class="w-5 h-5 md:w-7 md:h-7 mb-1 opacity-30" style="color:var(--gold)"></i>
+                    <span class="text-[9px] md:text-[11px]" style="color:var(--text-muted)">เลือกไพ่</span>
+                </div>
+            </div>
+            <div></div>
+        </div>
+
+        <!-- THE STAFF -->
+        <div class="staff-col">
+            <div class="flex flex-col">
+                <div class="pos-label lg:text-left">10. บทสรุป</div>
+                <div id="slot-10" class="card-slot flex items-center justify-center" onclick="openCardSelector(10)">
+                    <span class="text-[9px] md:text-[11px]" style="color:var(--text-muted)">เลือกไพ่</span>
+                </div>
+            </div>
+            <div class="flex flex-col">
+                <div class="pos-label lg:text-left">9. หวัง/กลัว</div>
+                <div id="slot-9" class="card-slot flex items-center justify-center" onclick="openCardSelector(9)">
+                    <span class="text-[9px] md:text-[11px]" style="color:var(--text-muted)">เลือกไพ่</span>
+                </div>
+            </div>
+            <div class="flex flex-col">
+                <div class="pos-label lg:text-left">8. สภาพแวดล้อม</div>
+                <div id="slot-8" class="card-slot flex items-center justify-center" onclick="openCardSelector(8)">
+                    <span class="text-[9px] md:text-[11px]" style="color:var(--text-muted)">เลือกไพ่</span>
+                </div>
+            </div>
+            <div class="flex flex-col">
+                <div class="pos-label lg:text-left">7. ตัวตน</div>
+                <div id="slot-7" class="card-slot flex items-center justify-center" onclick="openCardSelector(7)">
+                    <span class="text-[9px] md:text-[11px]" style="color:var(--text-muted)">เลือกไพ่</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Predict Button ── -->
+    <div class="text-center mb-10">
+        <button id="predictBtn" onclick="generateReading()"
+            class="inline-flex items-center gap-2 font-bold py-3 px-8 md:px-14 rounded-full transition-all transform hover:scale-105 active:scale-95 text-base md:text-lg w-full max-w-xs justify-center"
+            style="background:linear-gradient(135deg,#7c3aed,#be185d); color:#fff; box-shadow:0 8px 30px -8px rgba(139,92,246,0.6)">
+            <i data-lucide="sparkles"></i>
+            อ่านคำทำนาย
+        </button>
+    </div>
+
+    <!-- ── Result ── -->
+    <div id="resultContainer" class="hidden glass-panel-gold rounded-2xl p-5 md:p-10 mb-6 max-w-4xl mx-auto shadow-2xl">
+        <div class="flex items-center gap-3 mb-5 pb-4" style="border-bottom:1px solid rgba(140,110,220,0.2)">
+            <i data-lucide="scroll-text" class="w-6 h-6 md:w-8 md:h-8 flex-shrink-0" style="color:var(--gold)"></i>
+            <h2 class="section-title text-xl md:text-2xl font-bold">คำทำนายของคุณ</h2>
+        </div>
+        <div id="loadingIndicator" class="hidden flex-col items-center justify-center py-10">
+            <div class="spinner mb-4"></div>
+            <p class="animate-pulse text-center text-sm px-4" style="color:#c0a0f0">กำลังเชื่อมโยงพลังงานจักรวาล และวิเคราะห์ความหมายของไพ่...</p>
+        </div>
+        <div id="resultContent" class="md text-slate-200"></div>
+        <div id="saveSection" class="hidden mt-5 pt-4 flex justify-end" style="border-top:1px solid rgba(140,110,220,0.2)">
+            <button onclick="saveReading()" id="saveBtn"
+                class="flex items-center gap-2 text-sm font-medium py-2 px-4 rounded-lg transition-all active:scale-95"
+                style="background:rgba(15,8,45,0.8); border:1px solid rgba(140,110,220,0.35); color:var(--text-secondary)">
+                <i data-lucide="bookmark-plus" class="w-4 h-4"></i>
+                บันทึกคำทำนายนี้
+            </button>
+        </div>
+    </div>
+
+    <!-- ── History ── -->
+    <div id="historySection" class="hidden max-w-4xl mx-auto mb-20">
+        <div class="flex items-center justify-between mb-3">
+            <h2 class="section-title text-sm md:text-base font-bold flex items-center gap-2">
+                <i data-lucide="history" class="w-4 h-4 md:w-5 md:h-5" style="color:var(--gold)"></i>
+                ประวัติคำทำนาย
+            </h2>
+            <button onclick="clearHistory()" class="text-xs flex items-center gap-1 transition-colors"
+                style="color:var(--text-muted)" onmouseover="this.style.color='#f87171'" onmouseout="this.style.color='var(--text-muted)'">
+                <i data-lucide="trash-2" class="w-3 h-3"></i> ลบทั้งหมด
+            </button>
+        </div>
+        <div id="historyList" class="space-y-3"></div>
+    </div>
+</div>
+
+<!-- ═══════════════════════ MODALS ═══════════════════════ -->
+
+<!-- Card Selection Modal -->
+<div id="cardModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-2 sm:p-3"
+    style="background:rgba(2,0,20,0.93); backdrop-filter:blur(6px)">
+    <div class="rounded-2xl w-full max-w-5xl flex flex-col shadow-2xl" style="height:92vh; background:#070220; border:1px solid rgba(140,110,220,0.25)">
+        <div class="p-3 md:p-4 flex justify-between items-center flex-shrink-0" style="border-bottom:1px solid rgba(100,75,180,0.25)">
+            <h3 class="section-title font-bold truncate pr-3" style="font-size:clamp(.9rem,2.5vw,1.15rem)" id="modalTitle">เลือกไพ่</h3>
+            <button onclick="closeCardSelector()" class="p-1.5 rounded-full transition-colors flex-shrink-0"
+                style="background:rgba(100,75,180,0.3); color:var(--text-secondary)"
+                onmouseover="this.style.color='#fff'" onmouseout="this.style.color='var(--text-secondary)'">
+                <i data-lucide="x" class="w-4 h-4 md:w-5 md:h-5"></i>
+            </button>
+        </div>
+        <div class="p-2 md:p-3 flex-shrink-0" style="border-bottom:1px solid rgba(100,75,180,0.2)">
+            <div class="relative">
+                <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style="color:var(--text-muted)"></i>
+                <input type="text" id="searchInput" onkeyup="filterCards()" placeholder="ค้นหาชื่อไพ่..." autocomplete="off"
+                    class="field pl-9 py-2.5">
+            </div>
+        </div>
+        <div class="overflow-y-auto flex-1 scroll p-2 md:p-3">
+            <div id="cardGrid" class="grid gap-2 md:gap-3 pb-6"
+                style="grid-template-columns:repeat(auto-fill,minmax(clamp(72px,17vw,108px),1fr))"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Card Preview Modal -->
+<div id="cardPreviewModal" class="fixed inset-0 z-[60] hidden flex items-center justify-center p-4"
+    style="background:rgba(2,0,20,0.97); backdrop-filter:blur(12px)">
+    <div class="flex flex-col items-center gap-5 max-w-xs w-full">
+        <div class="flex items-center justify-center" style="max-height:58vh">
+            <img id="previewImg" src="" alt="" class="preview-img">
+        </div>
+        <div class="text-center">
+            <p class="font-bold text-white mb-1" style="font-family:'Cinzel',serif; font-size:clamp(1rem,4vw,1.4rem)" id="previewCardName"></p>
+            <p class="text-sm" style="color:var(--gold)" id="previewPositionName"></p>
+        </div>
+        <div class="gold-divider w-full"></div>
+        <div class="flex gap-3 w-full">
+            <button onclick="closeCardPreview()"
+                class="flex-1 font-medium py-2.5 px-4 rounded-xl transition-colors text-sm active:scale-95"
+                style="background:rgba(30,15,70,0.8); border:1px solid rgba(100,75,180,0.4); color:var(--text-secondary)">
+                เลือกใหม่
+            </button>
+            <button onclick="confirmCardSelect()"
+                class="flex-1 font-bold py-2.5 px-4 rounded-xl transition-all text-sm active:scale-95"
+                style="background:linear-gradient(135deg,#7c3aed,#be185d); color:#fff; box-shadow:0 4px 16px -4px rgba(139,92,246,0.5)">
+                เลือกไพ่นี้ ✓
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- API Key Modal -->
+<div id="apiKeyModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4"
+    style="background:rgba(2,0,20,0.9); backdrop-filter:blur(8px)">
+    <div class="glass-panel-gold rounded-2xl w-full max-w-md shadow-2xl p-5 md:p-6">
+        <div class="flex items-center justify-between mb-5">
+            <h3 class="section-title text-lg md:text-xl font-bold flex items-center gap-2">
+                <i data-lucide="key" class="w-5 h-5" style="color:var(--gold)"></i>
+                ตั้งค่า Gemini API Key
+            </h3>
+            <button onclick="closeApiKeyModal()" class="p-1 rounded-full transition-colors"
+                style="background:rgba(100,75,180,0.3); color:var(--text-secondary)">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+        <div class="rounded-xl p-4 mb-4 text-sm space-y-1.5" style="background:rgba(8,4,28,0.7); border:1px solid rgba(100,75,180,0.25)">
+            <p class="font-medium" style="color:var(--text-primary)">วิธีรับ API Key ฟรี:</p>
+            <ol class="list-decimal pl-4 space-y-1" style="color:var(--text-muted)">
+                <li>เข้า <a href="https://aistudio.google.com/app/apikey" target="_blank" class="underline" style="color:#a78bfa">Google AI Studio</a></li>
+                <li>กด <strong style="color:var(--text-secondary)">Get API Key</strong> → Create API key</li>
+                <li>Copy key มาวางด้านล่าง</li>
+            </ol>
+            <p class="text-xs pt-1" style="color:var(--text-muted)">🔒 Key เก็บใน browser ของคุณเท่านั้น ไม่ส่งออกไปที่อื่น</p>
+        </div>
+        <div class="mb-4">
+            <label class="block text-xs mb-2" style="color:var(--text-muted)">Gemini API Key</label>
+            <div class="relative">
+                <input type="password" id="apiKeyInput" placeholder="AIzaSy..." class="field pr-10 font-mono">
+                <button onclick="toggleApiKeyVisibility()" class="absolute right-3 top-1/2 -translate-y-1/2 transition-colors"
+                    style="color:var(--text-muted)">
+                    <i data-lucide="eye" id="eyeIcon" class="w-4 h-4"></i>
+                </button>
+            </div>
+        </div>
+        <div class="flex gap-2">
+            <button onclick="saveApiKey()"
+                class="flex-1 font-bold py-2.5 px-4 rounded-lg transition-all flex items-center justify-center gap-2 active:scale-95"
+                style="background:linear-gradient(135deg,#7c3aed,#be185d); color:#fff">
+                <i data-lucide="save" class="w-4 h-4"></i> บันทึก
+            </button>
+            <button onclick="clearApiKey()"
+                class="py-2.5 px-4 rounded-lg transition-all text-sm"
+                style="background:rgba(30,15,70,0.8); border:1px solid rgba(100,75,180,0.3); color:var(--text-secondary)">
+                ลบ Key
+            </button>
+        </div>
+        <div id="apiKeySaveMsg" class="hidden mt-3 text-center text-sm flex items-center justify-center gap-1" style="color:#4ade80">
+            <i data-lucide="check-circle" class="w-4 h-4"></i> บันทึกสำเร็จแล้ว
+        </div>
+    </div>
+</div>
+
+<!-- Alert Modal -->
+<div id="alertModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4"
+    style="background:rgba(2,0,20,0.88); backdrop-filter:blur(6px)">
+    <div class="glass-panel rounded-2xl w-full max-w-sm shadow-2xl p-6 text-center" style="border-color:rgba(220,80,120,0.4)">
+        <div class="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4"
+            style="background:rgba(150,20,60,0.3); color:#f472b6">
+            <i data-lucide="alert-circle" class="w-7 h-7"></i>
+        </div>
+        <h3 class="section-title text-lg font-bold mb-2" id="alertTitle">แจ้งเตือน</h3>
+        <p class="mb-5 text-sm" style="color:var(--text-secondary)" id="alertMessage">กรุณาเลือกไพ่ให้ครบทุกตำแหน่ง</p>
+        <button onclick="closeAlert()"
+            class="font-medium py-2 px-6 rounded-lg transition-colors w-full active:scale-95"
+            style="background:rgba(30,15,70,0.8); border:1px solid rgba(100,75,180,0.35); color:var(--text-primary)">
+            ตกลง
+        </button>
+    </div>
+</div>
+
+<!-- History Detail Modal -->
+<div id="historyDetailModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-2 sm:p-4"
+    style="background:rgba(2,0,20,0.95); backdrop-filter:blur(8px)">
+    <div class="glass-panel rounded-2xl w-full max-w-3xl flex flex-col shadow-2xl" style="max-height:90vh">
+        <div class="p-4 flex justify-between items-center flex-shrink-0" style="border-bottom:1px solid rgba(140,110,220,0.2)">
+            <h3 class="section-title font-bold flex items-center gap-2 text-sm md:text-base truncate pr-3">
+                <i data-lucide="scroll-text" class="w-4 h-4 flex-shrink-0" style="color:var(--gold)"></i>
+                <span id="historyDetailTitle">คำทำนายย้อนหลัง</span>
+            </h3>
+            <button onclick="closeHistoryDetail()" class="p-1 rounded-full flex-shrink-0"
+                style="background:rgba(100,75,180,0.3); color:var(--text-secondary)">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+        <div class="overflow-y-auto flex-1 scroll p-4 md:p-6">
+            <div id="historyDetailContent" class="md text-slate-200"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+// ── Card Mode ─────────────────────────────────────────────────────────────────
+let cardMode = localStorage.getItem('tarot_card_mode') || 'horror';
+
+function setCardMode(mode) {
+    cardMode = mode;
+    localStorage.setItem('tarot_card_mode', mode);
+    updateModeUI();
+    refreshPlacedCards();
+    // Re-render open modal if any
+    if (!document.getElementById('cardModal').classList.contains('hidden')) {
+        const q = document.getElementById('searchInput').value.toLowerCase();
+        renderCardGrid(q ? tarotCards.filter(c => c.name.toLowerCase().includes(q)) : tarotCards);
+    }
+}
+
+function updateModeUI() {
+    const hBtn = document.getElementById('modeHorrorBtn');
+    const cBtn = document.getElementById('modeClassicBtn');
+    if (cardMode === 'horror') {
+        hBtn.className = 'mode-btn mode-btn-active-horror';
+        cBtn.className = 'mode-btn mode-btn-inactive';
+    } else {
+        hBtn.className = 'mode-btn mode-btn-inactive';
+        cBtn.className = 'mode-btn mode-btn-active-classic';
+    }
+}
+
+// ── API Key ───────────────────────────────────────────────────────────────────
+const API_KEY_STORAGE = 'tarot_gemini_api_key';
+function getApiKey() { return localStorage.getItem(API_KEY_STORAGE) || ''; }
+function updateApiKeyStatus() {
+    const has = !!getApiKey();
+    const dot = document.getElementById('apiKeyDot');
+    dot.style.background = has ? '#22c55e' : '#ef4444';
+    document.getElementById('apiKeyBanner').classList.toggle('hidden', has);
+}
+function openApiKeyModal() {
+    document.getElementById('apiKeyInput').value = getApiKey();
+    document.getElementById('apiKeySaveMsg').classList.add('hidden');
+    document.getElementById('apiKeyModal').classList.remove('hidden');
+    lucide.createIcons();
+}
+function closeApiKeyModal() { document.getElementById('apiKeyModal').classList.add('hidden'); }
+function saveApiKey() {
+    const v = document.getElementById('apiKeyInput').value.trim();
+    if (!v) return showAlert('ข้อผิดพลาด', 'กรุณากรอก API Key');
+    if (!v.startsWith('AIza')) return showAlert('API Key ไม่ถูกต้อง', 'Gemini API Key ต้องขึ้นต้นด้วย "AIza"');
+    localStorage.setItem(API_KEY_STORAGE, v);
+    updateApiKeyStatus();
+    const msg = document.getElementById('apiKeySaveMsg');
+    msg.classList.remove('hidden');
+    setTimeout(() => { msg.classList.add('hidden'); closeApiKeyModal(); }, 1200);
+}
+function clearApiKey() {
+    localStorage.removeItem(API_KEY_STORAGE);
+    document.getElementById('apiKeyInput').value = '';
+    updateApiKeyStatus();
+}
+function toggleApiKeyVisibility() {
+    const inp = document.getElementById('apiKeyInput');
+    const ico = document.getElementById('eyeIcon');
+    const hide = inp.type === 'password';
+    inp.type = hide ? 'text' : 'password';
+    ico.setAttribute('data-lucide', hide ? 'eye-off' : 'eye');
+    lucide.createIcons();
+}
+
+// ── History ───────────────────────────────────────────────────────────────────
+const HISTORY_KEY = 'tarot_history';
+let _lastReadingText = '', _lastReadingCards = {};
+function loadHistory() { try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); } catch { return []; } }
+function saveReading() {
+    if (!_lastReadingText) return;
+    const history = loadHistory();
+    const uName = (document.getElementById('userName').value.trim() + ' ' + document.getElementById('userSurname').value.trim()).trim();
+    history.unshift({
+        id: Date.now(),
+        timestamp: new Date().toLocaleString('th-TH'),
+        userName: uName || 'ไม่ระบุชื่อ',
+        cards: Object.entries(_lastReadingCards).map(([p, c]) => ({ pos: +p, name: c.name })),
+        reading: _lastReadingText
+    });
+    if (history.length > 10) history.splice(10);
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+    const btn = document.getElementById('saveBtn');
+    btn.innerHTML = '<i data-lucide="bookmark-check" class="w-4 h-4"></i> บันทึกแล้ว';
+    btn.disabled = true; btn.style.opacity = '0.6';
+    lucide.createIcons();
+    renderHistory();
+}
+function clearHistory() {
+    if (!confirm('ลบประวัติคำทำนายทั้งหมด?')) return;
+    localStorage.removeItem(HISTORY_KEY); renderHistory();
+}
+function deleteHistoryItem(id) {
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(loadHistory().filter(h => h.id !== id)));
+    renderHistory();
+}
+function viewHistoryItem(id) {
+    const e = loadHistory().find(h => h.id === id);
+    if (!e) return;
+    document.getElementById('historyDetailTitle').textContent = `${e.userName} — ${e.timestamp}`;
+    document.getElementById('historyDetailContent').innerHTML = parseTextToHTML(e.reading);
+    document.getElementById('historyDetailModal').classList.remove('hidden');
+    lucide.createIcons();
+}
+function closeHistoryDetail() { document.getElementById('historyDetailModal').classList.add('hidden'); }
+function renderHistory() {
+    const history = loadHistory();
+    const sec = document.getElementById('historySection');
+    const list = document.getElementById('historyList');
+    if (!history.length) { sec.classList.add('hidden'); return; }
+    sec.classList.remove('hidden');
+    list.innerHTML = history.map(e => {
+        const names = e.cards.slice(0,3).map(c=>c.name).join(', ') + (e.cards.length>3 ? ` +${e.cards.length-3}` : '');
+        return `<div class="glass-panel rounded-xl p-3 md:p-4 transition-all cursor-pointer flex items-center gap-3 group"
+            style="border-color:rgba(100,75,180,0.3)"
+            onmouseover="this.style.borderColor='rgba(201,168,76,0.4)'"
+            onmouseout="this.style.borderColor='rgba(100,75,180,0.3)'"
+            onclick="viewHistoryItem(${e.id})">
+            <div class="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
+                style="background:rgba(50,30,100,0.6)">
+                <i data-lucide="scroll-text" class="w-4 h-4" style="color:var(--gold)"></i>
+            </div>
+            <div class="flex-1 min-w-0">
+                <div class="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                    <span class="font-medium text-sm" style="color:var(--text-primary)">${e.userName}</span>
+                    <span class="text-xs" style="color:var(--text-muted)">${e.timestamp}</span>
+                </div>
+                <p class="text-xs truncate mt-0.5" style="color:var(--text-muted)">${names}</p>
+            </div>
+            <button onclick="event.stopPropagation();deleteHistoryItem(${e.id})"
+                class="opacity-0 group-hover:opacity-100 p-1 rounded transition-all flex-shrink-0"
+                style="color:var(--text-muted)" onmouseover="this.style.color='#f87171'" onmouseout="this.style.color='var(--text-muted)'">
+                <i data-lucide="trash-2" class="w-4 h-4"></i>
+            </button>
+        </div>`;
+    }).join('');
+    lucide.createIcons();
+}
+
+// ── Tarot Deck ────────────────────────────────────────────────────────────────
+const generateTarotDeck = () => {
+    const deck = [];
+    const WIKI = 'https://commons.wikimedia.org/wiki/Special:FilePath/';
+
+    const suits = [
+        { name:'Wands',     code:'wa', wiki:'Wands'  },
+        { name:'Cups',      code:'cu', wiki:'Cups'   },
+        { name:'Swords',    code:'sw', wiki:'Swords' },
+        { name:'Pentacles', code:'pe', wiki:'Pents'  }
+    ];
+    const ranks = ['Ace','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten','Page','Knight','Queen','King'];
+    const minorCodes = ['ac','02','03','04','05','06','07','08','09','10','pa','kn','qu','ki'];
+    const majorNames = [
+        "0 - The Fool","I - The Magician","II - The High Priestess","III - The Empress","IV - The Emperor",
+        "V - The Hierophant","VI - The Lovers","VII - The Chariot","VIII - Strength","IX - The Hermit",
+        "X - Wheel of Fortune","XI - Justice","XII - The Hanged Man","XIII - Death","XIV - Temperance",
+        "XV - The Devil","XVI - The Tower","XVII - The Star","XVIII - The Moon","XIX - The Sun",
+        "XX - Judgement","XXI - The World"
+    ];
+    const majorWiki = [
+        "RWS_Tarot_00_Fool.jpg","RWS_Tarot_01_Magician.jpg","RWS_Tarot_02_High_Priestess.jpg",
+        "RWS_Tarot_03_Empress.jpg","RWS_Tarot_04_Emperor.jpg","RWS_Tarot_05_Hierophant.jpg",
+        "RWS_Tarot_06_Lovers.jpg","RWS_Tarot_07_Chariot.jpg","RWS_Tarot_08_Strength.jpg",
+        "RWS_Tarot_09_Hermit.jpg","RWS_Tarot_10_Wheel_of_Fortune.jpg","RWS_Tarot_11_Justice.jpg",
+        "RWS_Tarot_12_Hanged_Man.jpg","RWS_Tarot_13_Death.jpg","RWS_Tarot_14_Temperance.jpg",
+        "RWS_Tarot_15_Devil.jpg","RWS_Tarot_16_Tower.jpg","RWS_Tarot_17_Star.jpg",
+        "RWS_Tarot_18_Moon.jpg","RWS_Tarot_19_Sun.jpg","RWS_Tarot_20_Judgement.jpg","RWS_Tarot_21_World.jpg"
+    ];
+
+    majorNames.forEach((name, i) => {
+        deck.push({
+            name,
+            horrorImg:  `./images/ar${i < 10 ? '0'+i : i}.png`,
+            classicImg: `${WIKI}${majorWiki[i]}`
+        });
+    });
+    suits.forEach(suit => {
+        ranks.forEach((rank, i) => {
+            const n = (i+1) < 10 ? '0'+(i+1) : (i+1).toString();
+            deck.push({
+                name: `${rank} of ${suit.name}`,
+                horrorImg:  `./images/${suit.code}${minorCodes[i]}.png`,
+                classicImg: `${WIKI}${suit.wiki}${n}.jpg`
+            });
+        });
+    });
+    return deck;
+};
+const tarotCards = generateTarotDeck();
+
+const selectedCards = {1:null,2:null,3:null,4:null,5:null,6:null,7:null,8:null,9:null,10:null};
+let currentSelectingPosition = null;
+let _pendingCard = null;
+
+const positionalMeanings = {
+    1:"สถานการณ์ปัจจุบัน",2:"อุปสรรค",3:"เป้าหมายสูงสุด",4:"รากฐาน/จิตใต้สำนึก",5:"อดีต",
+    6:"อนาคตอันใกล้",7:"วิธีรับมือ",8:"สภาพแวดล้อม",9:"หวัง/กลัว",10:"บทสรุป"
+};
+
+// ── Card Image ────────────────────────────────────────────────────────────────
+function getCardSrc(card) {
+    return cardMode === 'classic' ? card.classicImg : card.horrorImg;
+}
+function getFallbackSrc(card) {
+    return cardMode === 'classic' ? '' : card.classicImg;
+}
+function cardImgHTML(card, cls = '') {
+    const src = getCardSrc(card);
+    const fb  = getFallbackSrc(card);
+    const onerr = fb
+        ? `if(this.dataset.tried){this.alt='';this.style.opacity='0.15'}else{this.dataset.tried='1';this.src='${fb}'}`
+        : `this.style.opacity='0.15'`;
+    return `<img src="${src}" onerror="${onerr}" class="w-full h-full object-cover ${cls}" alt="${card.name}" loading="lazy">`;
+}
+
+// ── Card Modal ────────────────────────────────────────────────────────────────
+function openCardSelector(position) {
+    currentSelectingPosition = position;
+    document.getElementById('modalTitle').textContent = `ตำแหน่งที่ ${position}: ${positionalMeanings[position]}`;
+    document.getElementById('searchInput').value = '';
+    renderCardGrid(tarotCards);
+    document.getElementById('cardModal').classList.remove('hidden');
+    setTimeout(() => document.getElementById('searchInput').focus(), 50);
+}
+function closeCardSelector() {
+    document.getElementById('cardModal').classList.add('hidden');
+    currentSelectingPosition = null;
+}
+function filterCards() {
+    const q = document.getElementById('searchInput').value.toLowerCase();
+    renderCardGrid(q ? tarotCards.filter(c => c.name.toLowerCase().includes(q)) : tarotCards);
+}
+function renderCardGrid(cards) {
+    const grid = document.getElementById('cardGrid');
+    grid.innerHTML = '';
+    cards.forEach(card => {
+        const btn = document.createElement('button');
+        btn.className = 'card-item flex flex-col items-center';
+        btn.innerHTML = `
+            <div class="w-full rounded-lg overflow-hidden" style="aspect-ratio:2/3; background:rgba(10,5,30,0.8)">
+                ${cardImgHTML(card, 'rounded-lg')}
+            </div>
+            <div class="card-item-name w-full mt-1">${card.name}</div>`;
+        btn.onclick = () => showCardPreview(card);
+        grid.appendChild(btn);
+    });
+}
+
+// ── Card Preview (zoom) ───────────────────────────────────────────────────────
+function showCardPreview(card) {
+    _pendingCard = card;
+    const img = document.getElementById('previewImg');
+    img.src = getCardSrc(card);
+    img.alt = card.name;
+    img.onerror = function() {
+        const fb = getFallbackSrc(card);
+        if (fb && !this.dataset.tried) { this.dataset.tried = '1'; this.src = fb; }
+    };
+    document.getElementById('previewCardName').textContent = card.name;
+    document.getElementById('previewPositionName').textContent =
+        currentSelectingPosition ? `ตำแหน่งที่ ${currentSelectingPosition}: ${positionalMeanings[currentSelectingPosition]}` : '';
+    document.getElementById('cardPreviewModal').classList.remove('hidden');
+}
+function closeCardPreview() {
+    document.getElementById('cardPreviewModal').classList.add('hidden');
+    _pendingCard = null;
+}
+function confirmCardSelect() {
+    if (!_pendingCard || currentSelectingPosition === null) return;
+    placeCard(currentSelectingPosition, _pendingCard);
+    document.getElementById('cardPreviewModal').classList.add('hidden');
+    closeCardSelector();
+    _pendingCard = null;
+}
+function placeCard(position, card) {
+    selectedCards[position] = card;
+    const slot = document.getElementById(`slot-${position}`);
+    // reset classes
+    slot.style.background = 'transparent';
+    slot.style.border = '2px solid var(--gold)';
+    slot.style.padding = '0';
+    slot.className = slot.className.replace('flex flex-col items-center justify-center', '').replace('flex items-center justify-center', '') + ' overflow-hidden';
+    slot.innerHTML = `
+        <div class="relative w-full h-full">
+            ${cardImgHTML(card, position === 2 ? '' : 'rounded-[8px]')}
+            <div class="absolute bottom-0 left-0 right-0 truncate text-center font-medium px-1 py-1"
+                style="font-size:clamp(7px,1.5vw,10px); color:#d4b0ff;
+                background:linear-gradient(0deg, rgba(5,0,25,0.92) 60%, transparent 100%)">
+                ${card.name}
+            </div>
+        </div>`;
+}
+function refreshPlacedCards() {
+    for (let i = 1; i <= 10; i++) {
+        if (selectedCards[i]) placeCard(i, selectedCards[i]);
+    }
+}
+
+// ── Utilities ─────────────────────────────────────────────────────────────────
+function showAlert(title, msg) {
+    document.getElementById('alertTitle').textContent = title;
+    document.getElementById('alertMessage').textContent = msg;
+    document.getElementById('alertModal').classList.remove('hidden');
+}
+function closeAlert() { document.getElementById('alertModal').classList.add('hidden'); }
+
+function parseTextToHTML(text) {
+    let h = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\*(.*?)\*/g, '<em>$1</em>');
+    return h.split('\n\n').map(p => {
+        if (p.startsWith('# '))   return `<h2>${p.slice(2)}</h2>`;
+        if (p.startsWith('## '))  return `<h3>${p.slice(3)}</h3>`;
+        if (p.startsWith('### ')) return `<h4>${p.slice(4)}</h4>`;
+        if (p.includes('\n* ') || p.startsWith('* ')) {
+            const items = p.split('\n').filter(i => i.trim());
+            return '<ul>' + items.map(i => `<li>${i.startsWith('* ') ? i.slice(2) : i}</li>`).join('') + '</ul>';
+        }
+        return `<p>${p.replace(/\n/g, '<br>')}</p>`;
+    }).join('');
+}
+
+// ── Gemini API ────────────────────────────────────────────────────────────────
+async function fetchGemini(promptText, systemPrompt, maxRetries = 5) {
+    const apiKey = getApiKey();
+    if (!apiKey) { openApiKeyModal(); throw new Error('กรุณาตั้งค่า API Key ก่อนทำนาย'); }
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+    for (let i = 0; i < maxRetries; i++) {
+        try {
+            const res = await fetch(url, {
+                method:'POST', headers:{'Content-Type':'application/json'},
+                body: JSON.stringify({ contents:[{parts:[{text:promptText}]}], systemInstruction:{parts:[{text:systemPrompt}]} })
+            });
+            if (res.status === 400) { const e = await res.json(); throw new Error('API Key ไม่ถูกต้อง — ' + (e.error?.message || '')); }
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const r = await res.json();
+            return r.candidates?.[0]?.content?.parts?.[0]?.text || 'เกิดข้อผิดพลาด';
+        } catch (err) {
+            if (err.message.includes('API Key') || i === maxRetries - 1) throw err;
+            await new Promise(r => setTimeout(r, Math.pow(2,i) * 1000));
+        }
+    }
+}
+
+// ── Generate Reading ──────────────────────────────────────────────────────────
+async function generateReading() {
+    const missing = Object.keys(selectedCards).filter(k => !selectedCards[k]);
+    if (missing.length) return showAlert('ข้อมูลไม่ครบถ้วน', `กรุณาเลือกไพ่ในตำแหน่งที่: ${missing.join(', ')}`);
+
+    const uName  = document.getElementById('userName').value.trim();
+    const uSur   = document.getElementById('userSurname').value.trim();
+    const uDob   = document.getElementById('userDob').value;
+    const uTime  = document.getElementById('userTime').value;
+    const uGend  = document.getElementById('userGender').value;
+    const info   = (uName || uDob) ? `ข้อมูลเจ้าของดวง:\n- ชื่อ: ${uName} ${uSur}\n- วดป.เกิด: ${uDob}\n- เวลาเกิด: ${uTime}\n- เพศ: ${uGend}\n\n` : '';
+
+    const rc = document.getElementById('resultContainer');
+    const li = document.getElementById('loadingIndicator');
+    const ri = document.getElementById('resultContent');
+    const pb = document.getElementById('predictBtn');
+    const ss = document.getElementById('saveSection');
+    const sb = document.getElementById('saveBtn');
+
+    rc.classList.remove('hidden');
+    li.classList.remove('hidden'); li.classList.add('flex');
+    ri.innerHTML = ''; ss.classList.add('hidden');
+    sb.disabled = false; sb.style.opacity = '1';
+    sb.innerHTML = '<i data-lucide="bookmark-plus" class="w-4 h-4"></i> บันทึกคำทำนายนี้';
+    pb.disabled = true; pb.style.opacity = '0.5'; pb.style.cursor = 'not-allowed';
+    setTimeout(() => rc.scrollIntoView({behavior:'smooth', block:'start'}), 100);
+
+    const sys = 'คุณคือผู้เชี่ยวชาญการอ่านไพ่ทาโรต์ระดับมาสเตอร์ ใช้ภาษาที่สละสลวย น่าเชื่อถือ ให้คำแนะนำเชิงบวกและปรับใช้ได้จริง อิงความหมายไพ่คลาสสิก (Rider-Waite) และข้อมูลลูกดวง';
+    let cards = '';
+    for (let i = 1; i <= 10; i++) cards += `ตำแหน่งที่ ${i} - ${positionalMeanings[i]}: ไพ่ **${selectedCards[i].name}**\n`;
+    const prompt = `${info}ลูกดวงเปิดไพ่ Celtic Cross (ทศดารา) 10 ตำแหน่ง:\n\n${cards}\n\nจงอ่านคำทำนายอย่างละเอียด:\n1. ภาพรวมสถานการณ์ (The Cross)\n2. เส้นทางเวลา (Timeline)\n3. ปัจจัยแวดล้อม (The Staff)\n4. บทสรุปและคำแนะนำ (Final Outcome)\n(จัดรูปแบบข้อความให้อ่านง่าย รองรับ Markdown)`;
+
+    try {
+        const reading = await fetchGemini(prompt, sys);
+        _lastReadingText = reading; _lastReadingCards = {...selectedCards};
+        ri.innerHTML = parseTextToHTML(reading);
+        ss.classList.remove('hidden'); lucide.createIcons();
+    } catch (err) {
+        ri.innerHTML = `<div class="rounded-lg p-4 text-center" style="background:rgba(100,20,40,0.3); border:1px solid rgba(220,80,100,0.4)">
+            <p style="color:#fca5a5">${err.message}</p></div>`;
+    } finally {
+        li.classList.add('hidden'); li.classList.remove('flex');
+        pb.disabled = false; pb.style.opacity = '1'; pb.style.cursor = '';
+    }
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+window.addEventListener('load', () => {
+    lucide.createIcons();
+    updateApiKeyStatus();
+    updateModeUI();
+    renderHistory();
+    if (!getApiKey()) setTimeout(openApiKeyModal, 500);
+});
+
+// Backdrop close & keyboard
+['cardModal','cardPreviewModal','historyDetailModal','alertModal','apiKeyModal'].forEach(id => {
+    document.getElementById(id).addEventListener('click', function(e) {
+        if (e.target === this) {
+            if (id === 'cardModal')         closeCardSelector();
+            else if (id === 'cardPreviewModal') closeCardPreview();
+            else if (id === 'historyDetailModal') closeHistoryDetail();
+            else if (id === 'alertModal')   closeAlert();
+            else if (id === 'apiKeyModal')  closeApiKeyModal();
+        }
+    });
+});
+document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+        closeCardSelector(); closeCardPreview();
+        closeHistoryDetail(); closeAlert(); closeApiKeyModal();
+    }
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,23 @@
+# Large master/preview assets (not used by the app)
+1.MAJOR.png
+2.MAJOR.png
+3.PENTACLES.png
+4.CUP.png
+5.SWORDS.png
+6.WANDS.png
+
+# Secrets / local config
+*.env
+config.local.*
+api_key.txt
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor
+.vscode/
+.idea/
+*.suo
+*.user
