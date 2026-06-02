@@ -353,7 +353,7 @@
             <h1 class="title-cinzel">Celtic Cross Tarot</h1>
             <i data-lucide="sparkles" class="w-7 h-7 md:w-10 md:h-10 flex-shrink-0" style="color:var(--rose-accent)"></i>
         </div>
-        <p class="text-sm md:text-base max-w-xl mx-auto px-2 leading-relaxed" style="color:var(--text-secondary)">
+        <p id="headerSubtitle" class="text-sm md:text-base max-w-xl mx-auto px-2 leading-relaxed" style="color:var(--text-secondary)">
             จำลองการวางไพ่ทาโรต์ 10 ตำแหน่ง (ทศดารา) เพื่อเจาะลึกสถานการณ์ อดีต อนาคต และบทสรุป
         </p>
 
@@ -364,6 +364,12 @@
                 <button id="modeHorrorBtn" onclick="setCardMode('horror')" class="mode-btn">🎭 Horror</button>
                 <button id="modeClassicBtn" onclick="setCardMode('classic')" class="mode-btn">🎴 Classic</button>
             </div>
+            <!-- Language Toggle -->
+            <button id="langToggleBtn" onclick="toggleLang()" title="Switch language"
+                class="inline-flex items-center gap-1.5 text-xs py-1.5 px-3 rounded-lg transition-colors font-semibold"
+                style="background:rgba(8,4,28,0.8); border:1px solid rgba(100,75,180,0.3); color:var(--text-secondary)">
+                🇬🇧 EN
+            </button>
             <!-- Reversal Toggle -->
             <button id="reversalToggleBtn" onclick="toggleReversalMode()" title="เปิด/ปิด ไพ่กลับหัว"
                 class="inline-flex items-center gap-1.5 text-xs py-1.5 px-3 rounded-lg transition-colors"
@@ -425,97 +431,93 @@
         <!-- THE CROSS -->
         <div class="cross-grid">
 
-            <!-- Row 1: empty | pos3 | empty -->
+            <!-- Row 1: empty | pos5 (Conscious / จิตสำนึก — TOP) | empty -->
             <div></div>
             <div class="flex flex-col">
-                <div class="pos-label">3. เป้าหมาย/ความคิด</div>
-                <div id="slot-3" class="card-slot flex flex-col items-center justify-center" onclick="openCardSelector(3)">
-                    <i data-lucide="plus-circle" class="w-5 h-5 md:w-7 md:h-7 mb-1 opacity-30" style="color:var(--gold)"></i>
-                    <span class="text-[9px] md:text-[11px]" style="color:var(--text-muted)">เลือกไพ่</span>
-                </div>
-            </div>
-            <div></div>
-
-            <!-- Row 2: pos5 | center(1+2) | pos6 -->
-            <div class="flex flex-col">
-                <div class="pos-label">5. อดีตที่ผ่านมา</div>
+                <div class="pos-label" id="pl-5">5. จิตสำนึก</div>
                 <div id="slot-5" class="card-slot flex flex-col items-center justify-center" onclick="openCardSelector(5)">
                     <i data-lucide="plus-circle" class="w-5 h-5 md:w-7 md:h-7 mb-1 opacity-30" style="color:var(--gold)"></i>
-                    <span class="text-[9px] md:text-[11px]" style="color:var(--text-muted)">เลือกไพ่</span>
+                    <span class="text-[9px] md:text-[11px] select-hint" style="color:var(--text-muted)">เลือกไพ่</span>
+                </div>
+            </div>
+            <div></div>
+
+            <!-- Row 2: pos4 (Release) | center(1+2) | pos6 (Invite) -->
+            <div class="flex flex-col">
+                <div class="pos-label" id="pl-4">4. ปล่อยผ่าน</div>
+                <div id="slot-4" class="card-slot flex flex-col items-center justify-center" onclick="openCardSelector(4)">
+                    <i data-lucide="plus-circle" class="w-5 h-5 md:w-7 md:h-7 mb-1 opacity-30" style="color:var(--gold)"></i>
+                    <span class="text-[9px] md:text-[11px] select-hint" style="color:var(--text-muted)">เลือกไพ่</span>
                 </div>
             </div>
 
-            <!-- Center: pos1 & pos2 — labels clearly above, no overlap -->
+            <!-- Center: pos1 & pos2 -->
             <div class="flex flex-col">
-                <!-- Both labels in one row -->
                 <div class="flex justify-between items-end gap-1 mb-1">
-                    <span class="pos-label pos-label-sm" style="flex:1; text-align:left">1. สถานการณ์</span>
-                    <span class="pos-label pos-label-sm pos-label-rose" style="flex:1; text-align:right">2. อุปสรรค</span>
+                    <span class="pos-label pos-label-sm" id="pl-1" style="flex:1; text-align:left">1. สถานการณ์</span>
+                    <span class="pos-label pos-label-sm pos-label-rose" id="pl-2" style="flex:1; text-align:right">2. ข้าม</span>
                 </div>
-                <!-- Stacked cards -->
                 <div class="relative" style="aspect-ratio:2/3">
-                    <!-- pos1: base layer -->
                     <div id="slot-1"
                         class="absolute inset-0 card-slot flex flex-col items-center justify-center"
                         style="z-index:10; border-radius:10px"
                         onclick="openCardSelector(1)">
                         <i data-lucide="plus-circle" class="w-5 h-5 md:w-7 md:h-7 mb-1 opacity-30" style="color:var(--gold)"></i>
-                        <span class="text-[9px] md:text-[11px]" style="color:var(--text-muted)">เลือกไพ่</span>
+                        <span class="text-[9px] md:text-[11px] select-hint" style="color:var(--text-muted)">เลือกไพ่</span>
                     </div>
-                    <!-- pos2: rotated cross -->
                     <div id="slot-2"
                         class="card-slot-crossed flex items-center justify-center"
                         style="z-index:20; width:115%; height:100%; top:0; left:-7.5%; transform:rotate(90deg)"
                         onclick="openCardSelector(2)">
-                        <span class="text-[9px] md:text-[11px]" style="transform:rotate(-90deg); color:var(--text-muted)">เลือกไพ่</span>
+                        <span class="text-[9px] md:text-[11px] select-hint" style="transform:rotate(-90deg); color:var(--text-muted)">เลือกไพ่</span>
                     </div>
                 </div>
             </div>
 
             <div class="flex flex-col">
-                <div class="pos-label">6. อนาคตอันใกล้</div>
+                <div class="pos-label" id="pl-6">6. เข้ามา</div>
                 <div id="slot-6" class="card-slot flex flex-col items-center justify-center" onclick="openCardSelector(6)">
                     <i data-lucide="plus-circle" class="w-5 h-5 md:w-7 md:h-7 mb-1 opacity-30" style="color:var(--gold)"></i>
-                    <span class="text-[9px] md:text-[11px]" style="color:var(--text-muted)">เลือกไพ่</span>
+                    <span class="text-[9px] md:text-[11px] select-hint" style="color:var(--text-muted)">เลือกไพ่</span>
                 </div>
             </div>
 
-            <!-- Row 3: empty | pos4 | empty -->
+            <!-- Row 3: empty | pos3 (Unconscious / จิตใต้สำนึก — BOTTOM) | empty -->
             <div></div>
             <div class="flex flex-col">
-                <div class="pos-label">4. รากฐานจิตใจ</div>
-                <div id="slot-4" class="card-slot flex flex-col items-center justify-center" onclick="openCardSelector(4)">
+                <div class="pos-label" id="pl-3">3. จิตใต้สำนึก</div>
+                <div id="slot-3" class="card-slot flex flex-col items-center justify-center" onclick="openCardSelector(3)">
                     <i data-lucide="plus-circle" class="w-5 h-5 md:w-7 md:h-7 mb-1 opacity-30" style="color:var(--gold)"></i>
-                    <span class="text-[9px] md:text-[11px]" style="color:var(--text-muted)">เลือกไพ่</span>
+                    <span class="text-[9px] md:text-[11px] select-hint" style="color:var(--text-muted)">เลือกไพ่</span>
                 </div>
             </div>
             <div></div>
         </div>
 
-        <!-- THE STAFF -->
+        <!-- THE STAFF (10=top outcome → 7=bottom self) -->
         <div class="staff-col">
             <div class="flex flex-col">
-                <div class="pos-label lg:text-left">10. บทสรุป</div>
+                <div class="pos-label lg:text-left" id="pl-10">10. ปิดท้าย</div>
                 <div id="slot-10" class="card-slot flex items-center justify-center" onclick="openCardSelector(10)">
-                    <span class="text-[9px] md:text-[11px]" style="color:var(--text-muted)">เลือกไพ่</span>
+                    <span class="text-[9px] md:text-[11px] select-hint" style="color:var(--text-muted)">เลือกไพ่</span>
                 </div>
             </div>
             <div class="flex flex-col">
-                <div class="pos-label lg:text-left">9. หวัง/กลัว</div>
+                <div class="pos-label lg:text-left" id="pl-9">9. ความหวัง/กลัว</div>
                 <div id="slot-9" class="card-slot flex items-center justify-center" onclick="openCardSelector(9)">
-                    <span class="text-[9px] md:text-[11px]" style="color:var(--text-muted)">เลือกไพ่</span>
+                    <span class="text-[9px] md:text-[11px] select-hint" style="color:var(--text-muted)">เลือกไพ่</span>
                 </div>
             </div>
             <div class="flex flex-col">
-                <div class="pos-label lg:text-left">8. สภาพแวดล้อม</div>
+                <div class="pos-label lg:text-left" id="pl-8">8. มุมมองอื่น</div>
                 <div id="slot-8" class="card-slot flex items-center justify-center" onclick="openCardSelector(8)">
-                    <span class="text-[9px] md:text-[11px]" style="color:var(--text-muted)">เลือกไพ่</span>
+                    <span class="text-[9px] md:text-[11px] select-hint" style="color:var(--text-muted)">เลือกไพ่</span>
                 </div>
             </div>
             <div class="flex flex-col">
-                <div class="pos-label lg:text-left">7. ตัวตน</div>
+                <div class="pos-label lg:text-left" id="pl-7">7. ตัวตน</div>
                 <div id="slot-7" class="card-slot flex items-center justify-center" onclick="openCardSelector(7)">
-                    <span class="text-[9px] md:text-[11px]" style="color:var(--text-muted)">เลือกไพ่</span>
+                    <span class="text-[9px] md:text-[11px] select-hint" style="color:var(--text-muted)">เลือกไพ่</span>
                 </div>
             </div>
         </div>
@@ -527,7 +529,7 @@
             class="inline-flex items-center gap-2 font-bold py-3 px-8 md:px-14 rounded-full transition-all transform hover:scale-105 active:scale-95 text-base md:text-lg w-full max-w-xs justify-center"
             style="background:linear-gradient(135deg,#7c3aed,#be185d); color:#fff; box-shadow:0 8px 30px -8px rgba(139,92,246,0.6)">
             <i data-lucide="sparkles"></i>
-            อ่านคำทำนาย
+            <span id="predictBtnText">อ่านคำทำนาย</span>
         </button>
     </div>
 
@@ -535,7 +537,7 @@
     <div id="resultContainer" class="hidden glass-panel-gold rounded-2xl p-5 md:p-10 mb-6 max-w-4xl mx-auto shadow-2xl">
         <div class="flex items-center gap-3 mb-5 pb-4" style="border-bottom:1px solid rgba(140,110,220,0.2)">
             <i data-lucide="scroll-text" class="w-6 h-6 md:w-8 md:h-8 flex-shrink-0" style="color:var(--gold)"></i>
-            <h2 class="section-title text-xl md:text-2xl font-bold">คำทำนายของคุณ</h2>
+            <h2 id="resultTitleText" class="section-title text-xl md:text-2xl font-bold">คำทำนายของคุณ</h2>
         </div>
         <div id="loadingIndicator" class="hidden flex-col items-center justify-center py-10">
             <div class="spinner mb-4"></div>
@@ -756,17 +758,20 @@ function togglePendingReversal() {
     applyReversalPreview();
 }
 function applyReversalPreview() {
-    const img = document.getElementById('previewImg');
+    const img   = document.getElementById('previewImg');
     const badge = document.getElementById('reversalBadge');
+    const flipB = document.querySelector('.flip-btn');
+    const ui    = UI_TEXT[lang];
     if (_pendingReversed) {
         img.style.transform = 'rotate(180deg)';
-        badge.textContent = '↕ กลับหัว (Reversed)';
+        badge.textContent = ui.reversed;
         badge.className = 'reversed-badge reversed-badge-on';
     } else {
         img.style.transform = '';
-        badge.textContent = '↑ ตั้ง (Upright)';
+        badge.textContent = ui.upright;
         badge.className = 'reversed-badge reversed-badge-off';
     }
+    if (flipB) flipB.textContent = ui.flip;
 }
 
 function setCardMode(mode) {
@@ -962,10 +967,67 @@ const selectedCards = {1:null,2:null,3:null,4:null,5:null,6:null,7:null,8:null,9
 let currentSelectingPosition = null;
 let _pendingCard = null;
 
-const positionalMeanings = {
-    1:"สถานการณ์ปัจจุบัน",2:"อุปสรรค",3:"เป้าหมายสูงสุด",4:"รากฐาน/จิตใต้สำนึก",5:"อดีต",
-    6:"อนาคตอันใกล้",7:"วิธีรับมือ",8:"สภาพแวดล้อม",9:"หวัง/กลัว",10:"บทสรุป"
+// ── Language / i18n ───────────────────────────────────────────────────────────
+let lang = localStorage.getItem('tarot_lang') || 'th';
+
+const POSITIONS = {
+    th: {
+        short: ['','1. สถานการณ์','2. ข้าม','3. จิตใต้สำนึก','4. ปล่อยผ่าน','5. จิตสำนึก','6. เข้ามา','7. ตัวตน','8. มุมมองอื่น','9. ความหวัง/กลัว','10. ปิดท้าย'],
+        long:  ['','แก่นหัวใจ / สถานการณ์ปัจจุบัน','บริบทเพิ่มเติม','อิทธิพลจิตใต้สำนึก','พลังงานที่ปล่อยออก','อิทธิพลจิตสำนึก','พลังงานที่เข้ามา','ภาพลักษณ์ตัวเอง','มุมมองทางเลือก','ความหวังและความกลัว','ข้อความปิดท้าย'],
+    },
+    en: {
+        short: ['','1. Present','2. Crossing','3. Unconscious','4. Release','5. Conscious','6. Invite','7. Self','8. Perspective','9. Hopes/Fears','10. Closing'],
+        long:  ['','Overarching Themes','Additional Context','Unconscious Influences','Energy Moving Out','Conscious Influences','Energy Moving In','Self-Image','Alternative Perspective','Hopes & Fears','Closing Messages'],
+    }
 };
+const UI_TEXT = {
+    th: {
+        selectHint:'เลือกไพ่', predictBtn:'อ่านคำทำนาย', resultTitle:'คำทำนายของคุณ',
+        searchPlaceholder:'ค้นหาชื่อไพ่...', subtitle:'จำลองการวางไพ่ทาโรต์ 10 ตำแหน่ง (ทศดารา) เพื่อเจาะลึกสถานการณ์',
+        upright:'↑ ตั้ง (Upright)', reversed:'↕ กลับหัว (Reversed)', flip:'↕ สลับ',
+        modalPrefix:'ตำแหน่งที่',
+    },
+    en: {
+        selectHint:'Pick Card', predictBtn:'Read My Cards', resultTitle:'Your Reading',
+        searchPlaceholder:'Search card name...', subtitle:'A 10-card spread to illuminate your present situation',
+        upright:'↑ Upright', reversed:'↕ Reversed', flip:'↕ Flip',
+        modalPrefix:'Position',
+    }
+};
+
+function toggleLang() {
+    lang = lang === 'th' ? 'en' : 'th';
+    localStorage.setItem('tarot_lang', lang);
+    applyLang();
+}
+function applyLang() {
+    const pos = POSITIONS[lang];
+    const ui  = UI_TEXT[lang];
+    for (let i = 1; i <= 10; i++) {
+        const el = document.getElementById(`pl-${i}`);
+        if (el) el.textContent = pos.short[i];
+    }
+    document.querySelectorAll('.select-hint').forEach(el => el.textContent = ui.selectHint);
+    const pbt = document.getElementById('predictBtnText');
+    if (pbt) pbt.textContent = ui.predictBtn;
+    const rt = document.getElementById('resultTitleText');
+    if (rt) rt.textContent = ui.resultTitle;
+    const si = document.getElementById('searchInput');
+    if (si) si.placeholder = ui.searchPlaceholder;
+    const sub = document.getElementById('headerSubtitle');
+    if (sub) sub.textContent = ui.subtitle;
+    const ltb = document.getElementById('langToggleBtn');
+    if (ltb) ltb.textContent = lang === 'th' ? '🇬🇧 EN' : '🇹🇭 TH';
+    if (document.getElementById('reversalIndicator') && !document.getElementById('reversalIndicator').classList.contains('hidden')) {
+        applyReversalPreview();
+    }
+    lucide.createIcons();
+}
+
+// positionalMeanings shim — used in prompt + modal title
+const positionalMeanings = new Proxy({}, {
+    get: (_, k) => POSITIONS[lang].long[+k] || ''
+});
 
 // ── Card Image ────────────────────────────────────────────────────────────────
 function getCardSrc(card) {
@@ -1016,7 +1078,7 @@ function openCardSelector(position) {
     currentSelectingPosition = position;
     currentGroupFilter = 'all';
     updateCategoryTabs();
-    document.getElementById('modalTitle').textContent = `ตำแหน่งที่ ${position}: ${positionalMeanings[position]}`;
+    document.getElementById('modalTitle').textContent = `${UI_TEXT[lang].modalPrefix} ${position}: ${positionalMeanings[position]}`;
     document.getElementById('searchInput').value = '';
     renderCardGrid(tarotCards, true);
     document.getElementById('cardModal').classList.remove('hidden');
@@ -1107,7 +1169,7 @@ function showCardPreview(card) {
     };
     document.getElementById('previewCardName').textContent = card.name;
     document.getElementById('previewPositionName').textContent =
-        currentSelectingPosition ? `ตำแหน่งที่ ${currentSelectingPosition}: ${positionalMeanings[currentSelectingPosition]}` : '';
+        currentSelectingPosition ? `${UI_TEXT[lang].modalPrefix} ${currentSelectingPosition}: ${positionalMeanings[currentSelectingPosition]}` : '';
     const ind = document.getElementById('reversalIndicator');
     if (reversalMode) {
         ind.classList.remove('hidden'); ind.classList.add('flex');
@@ -1258,6 +1320,7 @@ window.addEventListener('load', () => {
     updateApiKeyStatus();
     updateModeUI();
     updateReversalUI();
+    applyLang();
     renderHistory();
     if (!getApiKey()) setTimeout(openApiKeyModal, 500);
 });
